@@ -60,6 +60,14 @@
 #include "G4SystemOfUnits.hh"
 #include "G4NuclideTable.hh"
 
+// multiple ionisation processes
+#include "G4Version.hh"
+#include "G4Proton.hh"
+#include "G4Alpha.hh"
+#include "G4DNADoubleIonisation.hh"
+#include "G4DNATripleIonisation.hh"
+#include "G4DNAQuadrupleIonisation.hh"
+
 //....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
 
 PhysicsList::PhysicsList() : G4VModularPhysicsList()
@@ -105,6 +113,7 @@ void PhysicsList::ConstructProcess()
   AddTransportation();
   fEmPhysicsList->ConstructProcess();
   fDecayPhysicsList->ConstructProcess();
+  ConstructMultipleIonisationProcess();
   if (nullptr != fRadDecayPhysicsList) {
     fRadDecayPhysicsList->ConstructProcess();
   }
@@ -207,4 +216,59 @@ void PhysicsList::TrackingCut()
 void PhysicsList::SetTrackingCut(G4bool isCut)
 {
   fIsTrackingCutSet = isCut;
+}
+
+//....oooOO0OOooo........oooOO0OOooo........oooOO0OOooo........oooOO0OOooo......
+
+void PhysicsList::ConstructMultipleIonisationProcess()
+{
+  auto BuildDoubleIonisation = [](const std::string& name,
+                                  G4ParticleDefinition* part) {
+    auto* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+    if (!ph->RegisterProcess(new G4DNADoubleIonisation(name), part)) {
+      std::cout << "[WARNNING] Failed to set " << name << std::endl;
+    }
+  };
+
+  auto BuildTripleIonisation = [](const std::string& name,
+                                  G4ParticleDefinition* part) {
+    auto* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+    if (!ph->RegisterProcess(new G4DNATripleIonisation(name), part)) {
+      std::cout << "[WARNNING] Failed to set " << name << std::endl;
+    }
+  };
+
+  auto BuildQuadrupleIonisation = [](const std::string& name,
+                                     G4ParticleDefinition* part) {
+    auto* ph = G4PhysicsListHelper::GetPhysicsListHelper();
+    if (!ph->RegisterProcess(new G4DNAQuadrupleIonisation(name), part)) {
+      std::cout << "[WARNNING] Failed to set " << name << std::endl;
+    }
+  };
+
+  // for protons
+  auto* proton = G4Proton::Proton();
+  BuildDoubleIonisation("proton_G4DNADoubleIonisation", proton);
+  BuildTripleIonisation("proton_G4DNATripleIonisation", proton);
+  BuildQuadrupleIonisation("proton_G4DNAQuadrupleIonisation", proton);
+
+  // for alpha particles
+  auto* alphapp = G4Alpha::Alpha();
+  BuildDoubleIonisation("alpha_G4DNADoubleIonisation", alphapp);
+  BuildTripleIonisation("alpha_G4DNATripleIonisation", alphapp);
+  BuildQuadrupleIonisation("alpha_G4DNAQuadrupleIonisation", alphapp);
+
+  // for carbon ions
+  auto* gion = G4GenericIon::GenericIon();
+  BuildDoubleIonisation("GenericIon_G4DNADoubleIonisation", gion);
+  BuildTripleIonisation("GenericIon_G4DNATripleIonisation", gion);
+  BuildQuadrupleIonisation("GenericIon_G4DNAQuadrupleIonisation", gion);
+
+#if G4VERSION_NUMBER >= 1132 && G4VERSION_REFERENCE_TAG >= 6
+  // for hydrogen atoms
+  auto* hydrogen = G4DNAGenericIonsManager::Instance()->GetIon("hydrogen");
+  BuildDoubleIonisation("hydrogen_G4DNADoubleIonisation", hydrogen);
+  BuildTripleIonisation("hydrogen_G4DNATripleIonisation", hydrogen);
+  BuildQuadrupleIonisation("hydrogen_G4DNAQuadrupleIonisation", hydrogen);
+#endif
 }

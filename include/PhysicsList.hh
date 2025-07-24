@@ -61,6 +61,8 @@ class PhysicsList : public G4VModularPhysicsList
   private:
     void TrackingCut();
 
+    void ConstructMultipleIonisationProcess();
+
     G4VPhysicsConstructor* fEmPhysicsList = nullptr;
     G4VPhysicsConstructor* fDecayPhysicsList = nullptr;
     G4VPhysicsConstructor* fRadDecayPhysicsList = nullptr;
